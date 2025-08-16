@@ -2,203 +2,237 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vin A.I</title>
+  <title>AI Chat</title>
   <style>
     body {
-      background-color: #111;
-      color: #eee;
-      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
+      font-family: "Inter", sans-serif;
+      background: #f9f9f9;
       display: flex;
       flex-direction: column;
       height: 100vh;
     }
+
+    /* Header */
     header {
-      background: #222;
-      padding: 10px;
+      background: #ffffff;
+      padding: 10px 16px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #ddd;
     }
     header h1 {
-      margin: 0;
       font-size: 18px;
+      margin: 0;
     }
-    #settings {
+    header .buttons {
       display: flex;
       gap: 8px;
     }
-    .mode-btn {
-      padding: 5px 10px;
+    button {
+      padding: 6px 10px;
+      font-size: 14px;
+      border: none;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 12px;
-      border: 1px solid #fff;
-      background: black;
-      color: white;
+      background: #eee;
     }
-    .mode-btn.active {
+    button:hover {
+      background: #ddd;
+    }
+
+    /* Settings popup */
+    #settingsMenu {
+      position: absolute;
+      top: 50px;
+      right: 10px;
       background: white;
-      color: black;
+      border: 1px solid #ccc;
+      padding: 10px;
+      display: none;
+      flex-direction: column;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
+    #settingsMenu label {
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    /* Chat container */
     #chat {
       flex: 1;
-      padding: 10px;
       overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
+
     .message {
-      margin: 8px 0;
-      padding: 10px;
-      border-radius: 8px;
       max-width: 80%;
-    }
-    .user {
-      background: #444;
-      align-self: flex-end;
-    }
-    .ai {
-      background: #222;
-      align-self: flex-start;
+      padding: 12px;
+      border-radius: 8px;
+      line-height: 1.4;
       white-space: pre-wrap;
     }
+    .user {
+      background: #007aff;
+      color: white;
+      align-self: flex-end;
+    }
+    .bot {
+      background: #eaeaea;
+      align-self: flex-start;
+    }
+
+    /* Code block */
     pre {
-      background: #000;
-      color: #0f0;
-      padding: 10px;
+      background: #1e1e1e;
+      color: #dcdcdc;
+      padding: 12px;
       border-radius: 6px;
-      position: relative;
       overflow-x: auto;
+      position: relative;
+      margin: 0;
     }
     .copy-btn {
       position: absolute;
-      top: 5px;
-      right: 5px;
+      top: 6px;
+      right: 6px;
       font-size: 12px;
-      padding: 4px 8px;
+      padding: 4px 6px;
       background: #444;
-      color: #fff;
-      border: none;
+      color: white;
       border-radius: 4px;
       cursor: pointer;
+      border: none;
     }
-    #input-area {
+
+    /* Input bar */
+    #inputBar {
       display: flex;
       padding: 10px;
-      background: #222;
+      border-top: 1px solid #ddd;
+      background: white;
     }
-    #user-input {
+    #messageInput {
       flex: 1;
       padding: 10px;
-      border: none;
+      border: 1px solid #ccc;
       border-radius: 6px;
+      font-size: 14px;
     }
-    button {
-      padding: 10px;
-      margin-left: 8px;
-      border: none;
-      border-radius: 6px;
-      background: #555;
+    #sendBtn {
+      margin-left: 10px;
+      background: #007aff;
       color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #666;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Vin A.I</h1>
-    <div id="settings">
-      <button id="humanBtn" class="mode-btn active">Human</button>
-      <button id="broBtn" class="mode-btn">Bro</button>
-      <button id="clearBtn" class="mode-btn">Clear</button>
+    <h1>AI Chat</h1>
+    <div class="buttons">
+      <button id="clearBtn">Clear</button>
+      <button id="settingsBtn">⚙</button>
+    </div>
+    <div id="settingsMenu">
+      <label><input type="radio" name="mode" value="human" checked> Human Mode</label>
+      <label><input type="radio" name="mode" value="bro"> Bro Mode</label>
     </div>
   </header>
 
   <div id="chat"></div>
 
-  <div id="input-area">
-    <input type="text" id="user-input" placeholder="Type your message...">
-    <button onclick="sendMessage()">Send</button>
+  <div id="inputBar">
+    <input type="text" id="messageInput" placeholder="Type a message...">
+    <button id="sendBtn">Send</button>
   </div>
 
   <script>
-    const chat = document.getElementById('chat');
-    const userInput = document.getElementById('user-input');
-    const humanBtn = document.getElementById('humanBtn');
-    const broBtn = document.getElementById('broBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    let mode = "human";
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const settingsBtn = document.getElementById("settingsBtn");
+    const settingsMenu = document.getElementById("settingsMenu");
 
-    humanBtn.onclick = () => {
-      mode = "human";
-      humanBtn.classList.add("active");
-      broBtn.classList.remove("active");
-    };
-    broBtn.onclick = () => {
-      mode = "bro";
-      broBtn.classList.add("active");
-      humanBtn.classList.remove("active");
-    };
-    clearBtn.onclick = () => {
+    // Load saved history
+    let history = JSON.parse(localStorage.getItem("chatHistory")) || [];
+    history.forEach(msg => addMessage(msg.text, msg.sender, false));
+
+    // Toggle settings
+    settingsBtn.addEventListener("click", () => {
+      settingsMenu.style.display = settingsMenu.style.display === "flex" ? "none" : "flex";
+    });
+
+    // Clear chat
+    clearBtn.addEventListener("click", () => {
       chat.innerHTML = "";
-    };
+      history = [];
+      localStorage.removeItem("chatHistory");
+    });
 
-    async function sendMessage() {
-      const text = userInput.value.trim();
-      if (!text) return;
-
-      addMessage(text, "user");
-      userInput.value = "";
-
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text, mode })
-        });
-        const data = await response.json();
-        addMessage(data.reply, "ai");
-      } catch (e) {
-        addMessage("Error: " + e.message, "ai");
-      }
-    }
-
-    function addMessage(text, sender) {
-      const msg = document.createElement("div");
-      msg.className = `message ${sender}`;
-
-      // Detect code block
-      if (text.includes("```")) {
-        const codeBlock = document.createElement("pre");
-        const codeText = text.replace(/```[a-z]*/g, "").trim();
-        codeBlock.textContent = codeText;
-
-        const copyBtn = document.createElement("button");
-        copyBtn.textContent = "Copy";
-        copyBtn.className = "copy-btn";
-        copyBtn.onclick = () => {
-          navigator.clipboard.writeText(codeText);
-          copyBtn.textContent = "Copied!";
-          setTimeout(() => copyBtn.textContent = "Copy", 1500);
-        };
-
-        codeBlock.appendChild(copyBtn);
-        msg.appendChild(codeBlock);
-      } else {
-        msg.textContent = text;
-      }
-
-      chat.appendChild(msg);
-      chat.scrollTop = chat.scrollHeight;
-    }
-
-    userInput.addEventListener("keypress", e => {
+    // Send message
+    sendBtn.addEventListener("click", sendMessage);
+    input.addEventListener("keypress", e => {
       if (e.key === "Enter") sendMessage();
     });
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      addMessage(text, "user");
+      input.value = "";
+
+      const res = await fetch("/api/index", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+      });
+      const data = await res.json();
+      addMessage(data.reply, "bot");
+    }
+
+    function addMessage(text, sender, save = true) {
+      const div = document.createElement("div");
+      div.className = "message " + sender;
+
+      // Detect code blocks ```...```
+      if (text.includes("```")) {
+        const parts = text.split(/```/);
+        div.innerHTML = parts.map((p, i) =>
+          i % 2 === 1 ? `<pre><button class="copy-btn">Copy</button><code>${escapeHtml(p)}</code></pre>` : p
+        ).join("");
+      } else {
+        div.textContent = text;
+      }
+
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+
+      // Save
+      if (save) {
+        history.push({ text, sender });
+        localStorage.setItem("chatHistory", JSON.stringify(history));
+      }
+
+      // Add copy button logic
+      div.querySelectorAll(".copy-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const code = btn.nextElementSibling.innerText;
+          navigator.clipboard.writeText(code);
+          btn.textContent = "Copied!";
+          setTimeout(() => (btn.textContent = "Copy"), 1500);
+        });
+      });
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
   </script>
 </body>
-  </html>
+</html>
