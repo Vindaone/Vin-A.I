@@ -4,29 +4,35 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { message } = req.body;
+    const { message, mode, history } = req.body;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
       },
       body: JSON.stringify({
         model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: message }],
-      }),
+        messages: [
+          { role: "system", content: mode === "bro" ? "Reply casually like a bro." : "Reply like a helpful human assistant." },
+          ...(history || []),
+          { role: "user", content: message }
+        ]
+      })
     });
 
     const data = await response.json();
 
-    if (data.error) {
-      return res.status(500).json({ error: data.error.message });
+    if (!response.ok) {
+      return res.status(500).json({ error: data.error?.message || "API request failed" });
     }
 
-    const reply = data.choices[0].message.content;
-    res.status(200).json({ reply });
+    return res.status(200).json({
+      reply: data.choices[0].message.content
+    });
+
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    return res.status(500).json({ error: err.message });
   }
 }
