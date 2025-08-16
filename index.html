@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vin A.I</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #eee;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      background: #222;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 18px;
+    }
+    #settings {
+      display: flex;
+      gap: 8px;
+    }
+    .mode-btn {
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      border: 1px solid #fff;
+      background: black;
+      color: white;
+    }
+    .mode-btn.active {
+      background: white;
+      color: black;
+    }
+    #chat {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .message {
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 80%;
+    }
+    .user {
+      background: #444;
+      align-self: flex-end;
+    }
+    .ai {
+      background: #222;
+      align-self: flex-start;
+      white-space: pre-wrap;
+    }
+    pre {
+      background: #000;
+      color: #0f0;
+      padding: 10px;
+      border-radius: 6px;
+      position: relative;
+      overflow-x: auto;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      font-size: 12px;
+      padding: 4px 8px;
+      background: #444;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #input-area {
+      display: flex;
+      padding: 10px;
+      background: #222;
+    }
+    #user-input {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+    }
+    button {
+      padding: 10px;
+      margin-left: 8px;
+      border: none;
+      border-radius: 6px;
+      background: #555;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #666;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vin A.I</h1>
+    <div id="settings">
+      <button id="humanBtn" class="mode-btn active">Human</button>
+      <button id="broBtn" class="mode-btn">Bro</button>
+      <button id="clearBtn" class="mode-btn">Clear</button>
+    </div>
+  </header>
+
+  <div id="chat"></div>
+
+  <div id="input-area">
+    <input type="text" id="user-input" placeholder="Type your message...">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const userInput = document.getElementById('user-input');
+    const humanBtn = document.getElementById('humanBtn');
+    const broBtn = document.getElementById('broBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    let mode = "human";
+
+    humanBtn.onclick = () => {
+      mode = "human";
+      humanBtn.classList.add("active");
+      broBtn.classList.remove("active");
+    };
+    broBtn.onclick = () => {
+      mode = "bro";
+      broBtn.classList.add("active");
+      humanBtn.classList.remove("active");
+    };
+    clearBtn.onclick = () => {
+      chat.innerHTML = "";
+    };
+
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      addMessage(text, "user");
+      userInput.value = "";
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text, mode })
+        });
+        const data = await response.json();
+        addMessage(data.reply, "ai");
+      } catch (e) {
+        addMessage("Error: " + e.message, "ai");
+      }
+    }
+
+    function addMessage(text, sender) {
+      const msg = document.createElement("div");
+      msg.className = `message ${sender}`;
+
+      // Detect code block
+      if (text.includes("```")) {
+        const codeBlock = document.createElement("pre");
+        const codeText = text.replace(/```[a-z]*/g, "").trim();
+        codeBlock.textContent = codeText;
+
+        const copyBtn = document.createElement("button");
+        copyBtn.textContent = "Copy";
+        copyBtn.className = "copy-btn";
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(codeText);
+          copyBtn.textContent = "Copied!";
+          setTimeout(() => copyBtn.textContent = "Copy", 1500);
+        };
+
+        codeBlock.appendChild(copyBtn);
+        msg.appendChild(codeBlock);
+      } else {
+        msg.textContent = text;
+      }
+
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    userInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+</body>
+  </html>
