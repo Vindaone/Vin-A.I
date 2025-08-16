@@ -1,66 +1,73 @@
-const chatContainer = document.getElementById("chat-container");
-const userInput = document.getElementById("user-input");
+const chatBox = document.getElementById("chat-box");
+const input = document.getElementById("chat-input");
 const sendBtn = document.getElementById("send-btn");
 const clearBtn = document.getElementById("clear-btn");
+const modeHuman = document.getElementById("mode-human");
+const modeBro = document.getElementById("mode-bro");
 
-function appendMessage(text, sender) {
-  const msg = document.createElement("div");
-  msg.classList.add("message", sender);
+let history = [];
+let mode = "human";
 
-  // detect code blocks
-  if (text.startsWith("```") && text.endsWith("```")) {
-    const code = document.createElement("div");
-    code.classList.add("code-block");
-    code.textContent = text.replace(/```/g, "").trim();
+// toggle mode
+modeHuman.addEventListener("click", () => {
+  mode = "human";
+  modeHuman.classList.add("active");
+  modeBro.classList.remove("active");
+});
 
-    const copyBtn = document.createElement("button");
-    copyBtn.classList.add("copy-btn");
-    copyBtn.textContent = "Copy";
-    copyBtn.onclick = () => {
-      navigator.clipboard.writeText(code.textContent);
-      copyBtn.textContent = "Copied!";
-      setTimeout(() => (copyBtn.textContent = "Copy"), 1500);
-    };
+modeBro.addEventListener("click", () => {
+  mode = "bro";
+  modeBro.classList.add("active");
+  modeHuman.classList.remove("active");
+});
 
-    code.appendChild(copyBtn);
-    msg.appendChild(code);
-  } else {
-    msg.textContent = text;
-  }
+// clear chat
+clearBtn.addEventListener("click", () => {
+  chatBox.innerHTML = "";
+  history = [];
+});
 
-  chatContainer.appendChild(msg);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-}
+// send message
+sendBtn.addEventListener("click", sendMessage);
+input.addEventListener("keypress", e => {
+  if (e.key === "Enter") sendMessage();
+});
 
 async function sendMessage() {
-  const text = userInput.value.trim();
+  const text = input.value.trim();
   if (!text) return;
 
-  appendMessage(text, "user");
-  userInput.value = "";
+  addMessage("user", text);
+  input.value = "";
 
   try {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify({ message: text, mode, history })
     });
 
     const data = await res.json();
-    if (data.reply) {
-      appendMessage(data.reply, "ai");
-    } else {
-      appendMessage("Error: No response from server", "ai");
+
+    if (data.error) {
+      addMessage("ai", "⚠️ " + data.error);
+      return;
     }
+
+    addMessage("ai", data.reply);
+
+    history.push({ role: "user", content: text });
+    history.push({ role: "assistant", content: data.reply });
+
   } catch (err) {
-    appendMessage("Error talking to server.", "ai");
+    addMessage("ai", "⚠️ " + err.message);
   }
 }
 
-sendBtn.addEventListener("click", sendMessage);
-userInput.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") sendMessage();
-});
-clearBtn.addEventListener("click", () => {
-  chatContainer.innerHTML = "";
-});
+function addMessage(sender, text) {
+  const msg = document.createElement("div");
+  msg.className = sender === "user" ? "msg user" : "msg ai";
+  msg.textContent = text;
+  chatBox.appendChild(msg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
